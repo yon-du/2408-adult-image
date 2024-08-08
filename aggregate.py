@@ -2,6 +2,7 @@ from glob import glob
 import json
 import sys
 
+
 category_id = sys.argv[1]
 
     # "contents": [
