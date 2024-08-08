@@ -25,15 +25,32 @@
     </style>
 </head>
 <body>
-    <a href="clean-result-filtered-101111103-with-id.csv" download>Download clean-result-filtered-101111103-with-id.csv</a> <br/>
-    <a href="clean-result-filtered-101111106-with-id.csv" download>Download clean-result-filtered-101111106-with-id.csv</a> <br/>
-    <a href="clean-result-filtered-101111108-with-id.csv" download>Download clean-result-filtered-101111108-with-id.csv</a> <br/>
-    <a href="clean-result-filtered-101111109-with-id.csv" download>Download clean-result-filtered-101111109-with-id.csv</a> <br/>
-    <a href="clean-result-filtered-101114-with-id.csv" download>Download clean-result-filtered-101114-with-id.csv</a>
+    <div>
+        <button class="toggle-button" onclick="toggleFold()">테스트 결과 파일 다운로드</button>
+    </div>
+    
+    <div id="fold-content" style="display: none;">
+        <a href="clean-result-filtered-101111103-with-id.csv" download>clean-result-filtered-101111103-with-id.csv</a> <br/>
+        <a href="clean-result-filtered-101111106-with-id.csv" download>clean-result-filtered-101111106-with-id.csv</a> <br/>
+        <a href="clean-result-filtered-101111108-with-id.csv" download>clean-result-filtered-101111108-with-id.csv</a> <br/>
+        <a href="clean-result-filtered-101111109-with-id.csv" download>clean-result-filtered-101111109-with-id.csv</a> <br/>
+        <a href="clean-result-filtered-101114-with-id.csv" download>clean-result-filtered-101114-with-id.csv</a> <br/>
+    </div>
+
+    <script>
+        function toggleFold() {
+            var foldContent = document.getElementById("fold-content");
+            if (foldContent.style.display === "none") {
+                foldContent.style.display = "block";
+            } else {
+                foldContent.style.display = "none";
+            }
+        }
+    </script>
 
     <input id="csv-file-input" type="file" accept=".csv" onchange="loadCsvData(event)" />
-    <button id="download-btn" disabled onclick="downloadCsv()">Download CSV</button>
-    <button id="reset-btn" disabled onclick="resetSelection()">Reset</button>
+    <button id="download-btn" disabled onclick="downloadCsv()">선택한 상품정보 CSV로 추출</button>
+    <button id="reset-btn" disabled onclick="resetSelection()">선택한 상품정보 Reset</button>
     <div>
         <label><input id="filter-normal" type="checkbox" checked onchange="filterImages()" /> 정상</label>
         <label><input id="filter-soft_adult" type="checkbox" checked onchange="filterImages()" /> SOFT_ADULT</label>
