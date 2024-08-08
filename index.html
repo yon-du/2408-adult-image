@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+
+        .container img {
+            width: 315px;
+            height: 315px;
+            margin: 10px;
+        }
+
+        .container .item {
+            text-align: center;
+        }
+
+        .container .item p {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <input id="csv-file-input" type="file" accept=".csv" onchange="loadCsvData(event)" />
+    <button id="download-btn" disabled onclick="downloadCsv()">Download CSV</button>
+    <button id="reset-btn" disabled onclick="resetSelection()">Reset</button>
+    <div>
+        <label><input id="filter-normal" type="checkbox" checked onchange="filterImages()" /> 정상</label>
+        <label><input id="filter-soft_adult" type="checkbox" checked onchange="filterImages()" /> SOFT_ADULT</label>
+    </div>
+    <div id="image-count">
+        <h2>정상: <span id="normal-count">0</span> (<span id="normal-percentage">0%</span>)</h2>
+        <h2>SOFT_ADULT: <span id="soft_adult-count">0</span> (<span id="soft_adult-percentage">0%</span>)</h2>
+    </div>
+    <div id="image-container" class="container"></div>
+
+    <script>
+        var observer, selectedImages = [];
+        var imageData = [];
+
+        function loadImage(element) {
+            if (element.getAttribute('data-src')) {
+                element.src = element.getAttribute('data-src');
+                element.removeAttribute('data-src');
+            }
+        }
+
+        function intersectCallback(entries, observer) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    loadImage(entry.target);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }
+
+        function loadImages(filteredData) {
+            var container = document.getElementById("image-container");
+            container.innerHTML = '';
+            filteredData.forEach((data, index) => {
+                var item = document.createElement("div");
+                item.classList.add("item");
+                var img = document.createElement("img");
+                if (index < 10) { 
+                    img.src = data.image_url;
+                } else {
+                    img.setAttribute('data-src', data.image_url);
+                }
+                img.alt = `${data.tag} - ${data.score}`;
+                item.appendChild(img);
+
+                // Add checkbox
+                var checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.className = "image-checkbox"; // Add class name to the checkbox
+                checkbox.id = `id_${data.id}`;
+                checkbox.onclick = function () {
+                    if (this.checked) {
+                        selectedImages.push(data);
+                    } else {
+                        var index = selectedImages.findIndex(image => image.id === data.id);
+                        selectedImages.splice(index, 1);
+                    }
+                    document.getElementById('download-btn').disabled = (selectedImages.length === 0);
+                    document.getElementById('reset-btn').disabled = (selectedImages.length === 0);
+                };
+                item.appendChild(checkbox);
+
+                var score = document.createElement("p");
+                score.innerText = `ID: ${data.id}, Score: ${data.score}`;  // Show id
+                item.appendChild(score);
+
+                container.appendChild(item);
+            });
+
+            var images = Array.from(document.querySelectorAll('img[data-src]'));
+            observer = new IntersectionObserver(intersectCallback);
+            images.forEach(image => observer.observe(image));
+        }
+
+        function parseCsvFile(file) {
+            var reader = new FileReader();
+            reader.onload = function(event) {
+                var lines = event.target.result.split('\n');
+                lines.shift(); // Remove the header line
+                imageData = lines.map(line => {
+                    var columns = line.split(',');
+                    return {image_url: columns[0], version: columns[1], score: columns[2], tag: columns[3], id: columns[4]};
+                });
+                countTags();
+                loadImages(imageData);
+            };
+            reader.readAsText(file);
+        }
+
+        function loadCsvData(event) {
+            parseCsvFile(event.target.files[0]);
+        }
+
+        function filterImages() {
+            var normalCheckbox = document.getElementById("filter-normal");
+            var softAdultCheckbox = document.getElementById("filter-soft_adult");
+
+            var filteredData = imageData.filter(item => {
+                return (normalCheckbox.checked && item.tag === '정상') ||
+                        (softAdultCheckbox.checked && item.tag === 'SOFT_ADULT');
+            });
+
+            loadImages(filteredData);
+        }
+
+        function countTags() {
+            var normalCount = imageData.reduce((count, image) => image.tag === '정상' ? count + 1 : count, 0);
+            var softAdultCount = imageData.reduce((count, image) => image.tag === 'SOFT_ADULT' ? count + 1 : count, 0);
+
+            document.getElementById('normal-count').innerText = normalCount;
+            document.getElementById('soft_adult-count').innerText = softAdultCount;
+
+            var normalPercentage = (normalCount / imageData.length * 100).toFixed(2);
+            var softAdultPercentage = (softAdultCount / imageData.length * 100).toFixed(2);
+
+            document.getElementById('normal-percentage').innerText = `${normalPercentage}%`;
+            document.getElementById('soft_adult-percentage').innerText = `${softAdultPercentage}%`;
+        }
+
+        function resetSelection() {
+            selectedImages = [];
+            var checkboxes = document.getElementsByClassName('image-checkbox'); // Get all checkboxes
+            for (var i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = false; // Uncheck all checkboxes
+            }
+            document.getElementById('download-btn').disabled = true;
+            document.getElementById('reset-btn').disabled = true;
+        }
+
+        function downloadCsv() {
+            var data = selectedImages.map(image => `${image.image_url},${image.version},${image.score},${image.tag},${image.id}`);
+            var csvContent = "data:text/csv;charset=utf-8," + ['image_url,version,score,tag,id', ...data].join("\n");
+            var encodedUri = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "selected_images.csv");
+            document.body.appendChild(link); // required for firefox
+            link.click();
+        }
+    </script>
+</body>
+</html>
